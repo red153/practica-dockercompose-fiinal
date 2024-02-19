@@ -1,0 +1,67 @@
+version: '3'
+services:
+
+  app_container:
+    build:
+      context: ./app #ruta de la carpeta donde  se encuentra el Dockerfile a utilizar para construir la imagen del contenedor.
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongodb # Ensure MongoDB is started before the web application
+    environment:
+      DB_URI: mongodb://root:example@mongodb:27017/task
+    networks:
+      - practica_net
+
+  mongodb:
+    image: mongo:7 
+    container_name: my_mongodb
+    volumes:
+      - ./mongo/dump:/db-dump  #Esto  es para que se creen los volúmenes si no existen. Donde deber guarda  la base de datos?
+      - mongodb_data5555:/data/db #La base de datos en si
+      - ./scripts:/docker-entrypoint-initdb.d/ #Scripts para crear la BD y los usuarios que se arrancan desde el incio cuando la base de datos es nueva y ejecuta la carpeta script/ todo lo  que haya dentro
+    ports:
+      - "27017:27017" 
+    environment:                          
+      MONGO_INITDB_ROOT_USERNAME: root    
+      MONGO_INITDB_ROOT_PASSWORD: example 
+    networks:
+      - practica_net
+
+  mongo-express:
+      image: mongo-express
+      container_name: my_mongo_express
+      restart: always
+      ports:
+        - "8081:8081"
+      environment:
+        ME_CONFIG_MONGODB_ADMINUSERNAME: root
+        ME_CONFIG_MONGODB_ADMINPASSWORD: example
+        ME_CONFIG_MONGODB_URL: mongodb://root:example@mongodb:27017/
+        ME_CONFIG_BASICAUTH_USERNAME: usuario
+        ME_CONFIG_BASICAUTH_PASSWORD: usuario
+      depends_on:
+        - mongodb
+      networks:
+        - practica_net
+
+      
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "80:80"
+    depends_on:
+      - app_container
+    networks:
+     - practica_net   
+        
+networks:
+  practica_net:
+    name: practica_net
+    driver: bridge
+
+volumes:
+  mongodb_data5555:
